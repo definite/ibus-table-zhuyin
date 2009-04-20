@@ -1,0 +1,10 @@
+ibus-table-zhuyin.
+
+Plain Zhuyin input method for Chinese.
+Cons: Does not automatically choose the right characters;
+Pros: Dose not automatically choose the wrong characters.
+
+[zh_TW]
+純注音輸入法。
+缺點為：不會自動選好字；優點為：不會自動選錯字。
+

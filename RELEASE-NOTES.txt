@@ -1,0 +1,5 @@
+PRJ_VER=1.0.7.20090414
+SUMMARY=Fixed the issue with ibus-gtk after 1.1.0.20090407
+# Changes
+Fixed the issue with ibus-gtk after 1.1.0.20090407
+
