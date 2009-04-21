@@ -1,0 +1,37 @@
+Installation Instructions
+*************************
+1. Extract source and enter the extracted directory, then:
+
+cmake . -DCMAKE_INSTALL_PREFIX='/usr' -Ddatadir='/usr/share'
+
+Change CMAKE_INSTALL_PREFIX and datadir to match the
+system configuration.
+
+2. make
+
+3. sudo make install
+
+4. sudo make install_post
+
+5. Restart IBus.
+
+6. Use iBus UI or run ibus-setup to add ibus-table-zhuyin.
+
+7. Enjoy!
+
+Alternatively, if you have RPM system, from step 1:
+2. make rpm
+
+3. sudo rpm -hiv RPMS/noarch/ibus-table-zhuyin-<latestVersion>.<fedoraVersion>.noarch.rpm
+
+4. Restart IBus.
+
+5. Use iBus UI or run ibus-setup to add ibus-table-zhuyin.
+
+6. Enjoy!
+
+To see other available build targets, use
+
+make help
+
+

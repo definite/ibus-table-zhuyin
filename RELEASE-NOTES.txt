@@ -1,5 +1,6 @@
-PRJ_VER=1.0.7.20090414
-SUMMARY=Fixed the issue with ibus-gtk after 1.1.0.20090407
+PRJ_VER=1.0.0.20090421
+SUMMARY=Initial submit
 # Changes
-Fixed the issue with ibus-gtk after 1.1.0.20090407
+Initial submit
+Not fully functional because the ibus-table is not yet support END_KEYS.
 

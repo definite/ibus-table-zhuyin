@@ -1,0 +1,65 @@
+####################################################################
+# CMake init defintion.
+# 
+# Definition that should run in front of everything else.
+# 
+SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
+
+IF(COMMAND cmake_policy)
+    cmake_policy(SET CMP0003 NEW)
+    cmake_policy(SET CMP0005 OLD)
+
+    # CMAKE 2.6.3 and above have CMAKE_VERSION
+    IF (CMAKE_VERSION)
+        cmake_policy(SET CMP0011 OLD)
+    ENDIF(CMAKE_VERSION)
+ENDIF(COMMAND cmake_policy)
+
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake_modules)
+SET(ENV{LC_ALL} "C")
+INCLUDE(BasicMacros)
+
+###==================================================================
+# Find parameters configuration
+#
+#  Note: CMake 2.4 does not support STRING(STRIP ..)
+
+DATE_FORMAT(DATE "+%a %b %d %Y")
+DATE_FORMAT(DATE_SHORT "+%Y%m%d")
+#MESSAGE("DATE=${DATE}|")
+
+###==================================================================
+# Directories
+#
+
+ADD_DEFINITIONS(-DCMAKE_INSTALL_PREFIX='"${CMAKE_INSTALL_PREFIX}"')
+
+IF(NOT DEFINED datadir)
+    SET(datadir "${CMAKE_INSTALL_PREFIX}/share")
+    ADD_DEFINITIONS(-DDATADIR='"${datadir}"')
+ENDIF()
+
+IF(NOT DEFINED docdir)
+    SET(docdir "${datadir}/doc")
+    ADD_DEFINITIONS(-DDOCDIR='"${docdir}"')
+ENDIF()
+
+IF(NOT DEFINED SYSCONF_INSTALL_DIR)
+    SET(SYSCONF_INSTALL_DIR "/etc")
+    ADD_DEFINITIONS(-DSYSCONFDIR='"${SYSCONF_INSTALL_DIR}"')
+ENDIF()
+
+IF(NOT DEFINED LIBEXEC_DIR)
+    SET(LIBEXEC_DIR "${CMAKE_INSTALL_PREFIX}/libexec")
+    ADD_DEFINITIONS(-DLIBEXEC_DIR='"${LIBEXEC_DIR}"')
+ENDIF()
+
+
+###==================================================================
+# CPack Generator
+# RPM and pack need them, so declare here.
+#
+SET(CPACK_GENERATOR "TGZ")
+SET(CPACK_SOURCE_GENERATOR "TGZ")
+
+

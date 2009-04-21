@@ -7,7 +7,8 @@
 #define USAGE_MSG \
     "Usage: %s [-h] [-V] [-o <outFile>] <tmplFile> <cinFile> \n"\
     "Convert XCIN cin file (input table) to IBus table template.txt\n"\
-    "-h: help\t\t-V verbose\n"\
+    "-h: help\n"\
+    "-V: verbose\n"\
     "-o outFile: output file, if this option is not given, then output to stdout\n"\
     "tmplFile: ibus-table template file, example can be found in %s/tables/template.txt\n\n"\
     "cinFile: input table file.\n\n"\
@@ -73,40 +74,44 @@ static void fields_parse(char *buf, Fields *fields){
 #define FILE_READ_BUFFER_SIZE 500
 #define FREQ_INIT 1000
 static bool cinFile_scan(){
+    VERBOSE_PRINT("*** Scanning cinFile %s\n",cinFile_name);
     ScanStage stage=SCAN_STAGE_INIT;
     char buf[FILE_READ_BUFFER_SIZE];
     Fields fields;
     int freq;
+    bool convert_keyname=false;
     char key_last[FILE_READ_BUFFER_SIZE];
     key_last[0]='\0';
 
     while(fgets(buf,FILE_READ_BUFFER_SIZE, cinFile)!=NULL){
+	VERBOSE_PRINT("stage=%d buf=%s|\n",stage,buf);
 	fields_parse(buf,&fields);
 	switch(stage){
 	    case SCAN_STAGE_INIT:
-		if ((strcmp(fields.field[0],"%%keyname")==0) && (strcmp(fields.field[1],"begin")==0) ){
+		if ((strcmp(fields.field[0],"%keyname")==0) && (strcmp(fields.field[1],"begin")==0) ){
 		    stage=SCAN_STAGE_KEYNAME;
 		    VERBOSE_PRINT("Reading %%keyname");
-		}else if ((strcmp(fields.field[0],"%%chardef")==0) && (strcmp(fields.field[1],"begin")==0) ){
+		    convert_keyname=true;
+		}else if ((strcmp(fields.field[0],"%chardef")==0) && (strcmp(fields.field[1],"begin")==0) ){
 		    stage=SCAN_STAGE_CHARDEF;
 		    VERBOSE_PRINT("Reading %%chardef");
 		}
 		break;
 	    case SCAN_STAGE_KEYNAME:
-		if ((strcmp(fields.field[0],"%%keyname")==0) && (strcmp(fields.field[1],"end")==0) ){
+		if ((strcmp(fields.field[0],"%keyname")==0) && (strcmp(fields.field[1],"end")==0) ){
 		    VERBOSE_PRINT("Reading %%keyname Done");
 		    break;
-		}else if ((strcmp(fields.field[0],"%%chardef")==0) && (strcmp(fields.field[1],"begin")==0) ){
+		}else if ((strcmp(fields.field[0],"%chardef")==0) && (strcmp(fields.field[1],"begin")==0) ){
 		    VERBOSE_PRINT("Reading %%chardef");
 		    stage=SCAN_STAGE_CHARDEF;
 		    break;
 		}
 		validInputChars[validInputChars_len++]=fields.field[0][0];
 		validInputChars[validInputChars_len]='\0';
-		fprintf(cinGouCiFile,"%s\t%s\n",fields.field[0],fields.field[1]);
+		fprintf(cinGouCiFile,"%s\t%s\n",fields.field[1],fields.field[0]);
 		break;
 	    case SCAN_STAGE_CHARDEF:
-		if ((strcmp(fields.field[0],"%%chardef")==0) && (strcmp(fields.field[1],"end")==0) ){
+		if ((strcmp(fields.field[0],"%chardef")==0) && (strcmp(fields.field[1],"end")==0) ){
 		    VERBOSE_PRINT("Reading %%chardef Done");
 		    break;
 		}
@@ -142,12 +147,12 @@ static bool files_merge(){
     rewind(cinGouCiFile);
     char buf[FILE_READ_BUFFER_SIZE];
 
-    VERBOSE_PRINT("Merging files.");
+    VERBOSE_PRINT("Merging files.\n");
     while(fgets(buf,FILE_READ_BUFFER_SIZE, tmplFile)!=NULL){
         bool printAsIs=true;
-	if (strncmp(buf,"END_TABLE",strlen("END_TABLE"))==0){
+	if (strncasecmp(buf,"END_TABLE",strlen("END_TABLE"))==0){
 	    file_cat(outFile,cinTableFile);
-	}else if (strncmp(buf,"END_GOUCI",strlen("END_GOUCI"))==0){
+	}else if (strncasecmp(buf,"END_GOUCI",strlen("END_GOUCI"))==0){
 	    file_cat(outFile,cinGouCiFile);
 	}else if (strncmp(buf,"VALID_INPUT_CHARS",strlen("VALID_INPUT_CHARS"))==0){
 	    fprintf(outFile,"VALID_INPUT_CHARS = %s\n",validInputChars);
@@ -163,15 +168,12 @@ static bool files_merge(){
 
     fclose(cinTableFile);
     fclose(cinGouCiFile);
-    fclose(cinFile);
-
-
     return true;
 }
 
 bool argument_is_valid(int argc, char * const argv[]){
     int opt;
-    while((opt=getopt(argc,argv,"hvo:"))!=-1){
+    while((opt=getopt(argc,argv,"hVo:"))!=-1){
 	switch (opt){
 	    case 'h':
 		usage_print(argv[0]);
@@ -192,13 +194,14 @@ bool argument_is_valid(int argc, char * const argv[]){
     }
     if (optind+2-1 > argc) {
 	fprintf(stderr, "Not enough arguments.\n");
-	exit(EXIT_FAILURE);
+	usage_print(argv[0]);
+	exit(-1);
     }
 
     tmplFile_name=argv[optind];
     if ((tmplFile=fopen(tmplFile_name,"r"))==NULL){
 	fprintf(stderr,"Cannot open %s for reading!\n",tmplFile_name);
-	exit(EXIT_FAILURE);
+	exit(-1);
     }
 
     cinFile_name=argv[optind+1];
@@ -206,7 +209,6 @@ bool argument_is_valid(int argc, char * const argv[]){
 	fprintf(stderr,"Cannot open %s for reading!\n",cinFile_name);
 	exit(-1);
     }
-
 
     if ((cinTableFile=fdopen(mkstemp(cinTableFile_name),"w+"))==NULL){
 	fprintf(stderr,"Cannot create temporary file %s for reading!\n",cinTableFile_name);

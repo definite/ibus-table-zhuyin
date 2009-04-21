@@ -1,0 +1,124 @@
+####################################################################
+# CMake common setting.
+#
+# Project independent setting.
+#
+# Optional Variables:
+#
+# SET(GENERATE_DOXYFILE TRUE)
+#       Generate doxyfile from doxyfile.in
+#
+# SET(ENABLE_GTKDOC TRUE)
+# SET(GTKDOC_OUTPUT_DIR <path>)
+#       Enable gtk-doc
+#
+# SET(GENERATE_UPLOADPKG_BATCH TRUE)
+#        Generate UploadPkg.batch for Uploading to hosting host
+#
+####################################################################
+INCLUDE(Version)
+
+ADD_DEFINITIONS(-DPROJECT_NAME='"${PROJECT_NAME}"')
+
+IF(NOT DEFINED PROJECT_DATADIR)
+    SET(PROJECT_DATADIR "${datadir}/${PROJECT_NAME}")
+ENDIF(NOT DEFINED PROJECT_DATADIR)
+ADD_DEFINITIONS(-DPROJECT_DATADIR='"${PROJECT_DATADIR}"')
+
+IF(NOT DEFINED PROJECT_DOCDIR)
+    SET(PROJECT_DOCDIR "${docdir}/${PROJECT_NAME}-${PRJ_VER}")
+ENDIF(NOT DEFINED PROJECT_DOCDIR)
+
+ADD_DEFINITIONS(-DPRJ_VERSION='"${PRJ_VER_FULL}"')
+
+# Load developer targets if DEVELOPER_SETTING_FILE exists
+SET(DEVELOPER_SETTING_FILE "DEVELOPER_SETTING_NO_PACK")
+IF(EXISTS ${DEVELOPER_SETTING_FILE})
+    SET(DEVELOPER_DEPENDS UploadPkg.batch.in)
+    SET(HOSTING_SERVICE_PROVIDER "Source forge")
+    INCLUDE(Developer)
+    SETTING_FILE_GET_ATTRIBUTE(SSH_USER SSH_USER ${DEVELOPER_SETTING_FILE})
+    SETTING_FILE_GET_ATTRIBUTE(SSH_ARGS SSH_ARGS ${DEVELOPER_SETTING_FILE})
+    SETTING_FILE_GET_ATTRIBUTE(KOJI_CVS_PATH KOJI_CVS_PATH ${DEVELOPER_SETTING_FILE})
+
+    DEVELOPER_UPLOAD(SERVER_TYPE sftp
+        USER ${SSH_USER}
+	BATCH UploadPkg.batch
+	OPTIONS ${SSH_ARGS}
+	SITE frs.sourceforge.net
+    )
+
+    # Start next version
+    ADD_CUSTOM_TARGET(next_version
+	    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/ChangeLog {CMAKE_SOURCE_DIR}/ChangeLog.prev
+	    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/SPECS/RPM-ChangeLog
+		${CMAKE_SOURCE_DIR}/SPECS/RPM-ChangeLogChangeLog.prev
+	    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/SPECS/RPM-RELEASE-NOTES.template
+	        ${CMAKE_SOURCE_DIR}/SPECS/RPM-RELEASE-NOTES.txt
+	    )
+ENDIF(EXISTS ${DEVELOPER_SETTING_FILE})
+
+#==================================================================
+# Configure files
+#
+
+IF (GENERATE_DOXYFILE)
+    CONFIGURE_FILE(Doxyfile.in Doxyfile)
+ENDIF()
+
+IF (GENERATE_UPLOADPKG_BATCH)
+    CONFIGURE_FILE(UploadPkg.batch.in UploadPkg.batch)
+ENDIF()
+
+FILE(READ ${CMAKE_SOURCE_DIR}/ChangeLog.prev CHANGELOG_PREV)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/ChangeLog.in ${CMAKE_SOURCE_DIR}/ChangeLog)
+FILE(READ ${CMAKE_SOURCE_DIR}/SPECS/RPM-ChangeLog.prev RPM_CHANGELOG_PREV)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/SPECS/RPM-ChangeLog.in ${CMAKE_SOURCE_DIR}/SPECS/RPM-ChangeLog)
+
+#==================================================================
+# Make uninstall
+#
+CONFIGURE_FILE(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+
+ADD_CUSTOM_TARGET(uninstall
+    "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    )
+
+
+#====================================================================
+# Package handling
+#
+
+SET(CPACK_PACKAGE_VERSION ${PRJ_VER})
+SET(SOURCE_TARBALL_OUTPUT_DIR "${CMAKE_BINARY_DIR}/SOURCES")
+SET(MY_IGNORE_FILES '')
+SET(CPACK_PACKAGE_IGNORE_FILES ${MY_IGNORE_FILES})
+SET(CPACK_SOURCE_IGNORE_FILES ${MY_IGNORE_FILES})
+
+IF(EXISTS ${DEVELOPER_SETTING_FILE})
+    INCLUDE(FedoraDeveloper)
+ ELSE(EXISTS ${DEVELOPER_SETTING_FILE})
+    INCLUDE(RPM)
+ENDIF(EXISTS ${DEVELOPER_SETTING_FILE})
+
+#====================================================================
+# Document generation
+#
+IF (EXISTS Doxyfile)
+    FIND_PACKAGE(Doxygen)
+    ADD_CUSTOM_TARGET(doxygen
+	    COMMAND "${DOXYGEN}" "Doxyfile"
+	    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    INSTALL(DIRECTORY doc/html
+	DESTINATION "${docdir}/${PROJECT_NAME}-${PRJ_VER}"
+    )
+ENDIF()
+
+
+
+
+

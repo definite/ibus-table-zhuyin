@@ -1,6 +1,6 @@
-Name:       ibus-table-zhuyin
-Version:    1.0.7.20090414
-Release:    1%{?dist}
+Name:       @PROJECT_NAME@
+Version:    @PRJ_VER@
+Release:    @PRJ_VER_RELEASE@%{?dist}
 Summary:    Plain Zhuyin table for IBus
 License:    LGPLv2+
 Group:      System Environment/Libraries
@@ -55,10 +55,5 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/gconf/schemas/%{name}.schemas
 
 %changelog
-* Mon Apr 20 2009 Ding-Yi Chen <dchen at redhat.com> - 1.0.7.20090414-1
-
-
-
-
-
+@RPM_CHANGELOG@
 
